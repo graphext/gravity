@@ -21,8 +21,8 @@ import (
 
 	"github.com/gravitational/gravity/lib/loc"
 	"github.com/gravitational/gravity/lib/pack"
+	"github.com/gravitational/gravity/lib/schema"
 
-	"github.com/gravitational/trace"
 	. "gopkg.in/check.v1"
 )
 
@@ -33,28 +33,34 @@ type AppUtilsSuite struct{}
 var _ = Suite(&AppUtilsSuite{})
 
 func (s *AppUtilsSuite) TestUpdatedDependencies(c *C) {
+	manifest1, err := schema.ParseManifestYAMLNoValidate([]byte(app1Manifest))
+	c.Assert(err, IsNil)
 	app1 := Application{
 		Package: loc.MustParseLocator("repo/app:1.0.0"),
 		PackageEnvelope: pack.PackageEnvelope{
 			Manifest: []byte(app1Manifest),
 		},
+		Manifest: *manifest1,
 	}
+	manifest2, err := schema.ParseManifestYAMLNoValidate([]byte(app2Manifest))
+	c.Assert(err, IsNil)
 	app2 := Application{
 		Package: loc.MustParseLocator("repo/app:2.0.0"),
 		PackageEnvelope: pack.PackageEnvelope{
 			Manifest: []byte(app2Manifest),
 		},
+		Manifest: *manifest2,
 	}
 
-	updates, err := GetUpdatedDependencies(app1, app2)
+	updates, err := GetUpdatedDependencies(app1, app2, *manifest1, *manifest2)
 	c.Assert(err, IsNil)
 	c.Assert(updates, DeepEquals, []loc.Locator{
 		loc.MustParseLocator("repo/dep-2:2.0.0"),
 		loc.MustParseLocator("repo/app:2.0.0"),
 	})
 
-	updates, err = GetUpdatedDependencies(app1, app1)
-	c.Assert(trace.IsNotFound(err), Equals, true)
+	updates, err = GetUpdatedDependencies(app1, app1, *manifest1, *manifest1)
+	c.Assert(err, IsNil)
 	c.Assert(updates, DeepEquals, []loc.Locator(nil))
 }
 

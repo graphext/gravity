@@ -453,6 +453,14 @@ nodeProfiles:
 license:
   enabled: true
 
+# This section allows to tweak persistent storage in a Cluster
+storage:
+  # This section contains parameters specific to OpenEBS
+  openebs:
+    # Set this to true to install OpenEBS in a Cluster
+    # Note that setting this to true will also implicitly enable privileged containers
+    enabled: false
+
 #
 # This section allows to configure the runtime behavior of a Kubernetes Cluster
 #
