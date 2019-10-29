@@ -56,10 +56,9 @@ func status(env *localenv.LocalEnvironment, printOptions printOptions) error {
 
 	status, err := statusOnce(context.TODO(), operator, printOptions.operationID, env)
 	if err == nil {
-		err = printStatus(operator, clusterStatus{*status, nil}, printOptions)
-		return trace.Wrap(err)
+		return printStatus(operator, clusterStatus{*status, nil}, printOptions)
 	} else {
-		log.Errorf(trace.DebugReport(err))
+		log.WithError(err).Warn("Failed to fetch status.")
 	}
 
 	if printOptions.operationID != "" {
@@ -67,7 +66,7 @@ func status(env *localenv.LocalEnvironment, printOptions printOptions) error {
 	}
 
 	if status == nil {
-		log.Warnf("Failed to collect cluster status: %v.", trace.DebugReport(err))
+		log.WithError(err).Warn("Failed to collect cluster status.")
 		status = &statusapi.Status{
 			Cluster: &statusapi.Cluster{
 				State: ops.SiteStateDegraded,
@@ -77,7 +76,7 @@ func status(env *localenv.LocalEnvironment, printOptions printOptions) error {
 	if status.Agent == nil {
 		status.Agent, err = statusapi.FromPlanetAgent(context.TODO(), nil)
 		if err != nil {
-			log.Warnf("Failed to query status from planet agent: %v.", trace.DebugReport(err))
+			log.WithError(err).Warn("Failed to query status from planet agent.")
 		}
 	}
 
@@ -197,11 +196,10 @@ func printStatus(operator ops.Operator, status clusterStatus, printOptions print
 func printStatusWithOptions(status clusterStatus, printOptions printOptions) error {
 	switch printOptions.format {
 	case constants.EncodingJSON:
-		return trace.Wrap(printStatusJSON(status))
+		return printStatusJSON(os.Stdout, status)
 	default:
-		printStatusText(status)
+		return printStatusText(os.Stdout, status)
 	}
-	return nil
 }
 
 // tailOperationLogs follows the logs of the currently ongoing operation until the operation completes
@@ -246,21 +244,21 @@ func tailOperationLogs(operator ops.Operator, operationKey ops.SiteOperationKey)
 	}
 }
 
-func printStatusJSON(status clusterStatus) error {
+func printStatusJSON(out io.Writer, status clusterStatus) error {
 	log.Debugf("status: %#v", status)
 	bytes, err := json.Marshal(&status)
 	if err != nil {
 		return trace.Wrap(err, "failed to marshal")
 	}
 
-	fmt.Fprint(os.Stdout, string(bytes))
-	return nil
+	fmt.Fprintf(out, string(bytes))
+	return clusterStatusError(status)
 }
 
-func printStatusText(cluster clusterStatus) {
+func printStatusText(out io.Writer, cluster clusterStatus) error {
 	w := new(tabwriter.Writer)
 
-	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	w.Init(out, 0, 8, 1, '\t', 0)
 
 	if cluster.Cluster != nil {
 		if cluster.Status.IsDegraded() {
@@ -287,6 +285,7 @@ func printStatusText(cluster clusterStatus) {
 	if len(cluster.FailedLocalProbes) != 0 {
 		printFailedChecks(cluster.FailedLocalProbes)
 	}
+	return clusterStatusError(cluster)
 }
 
 func printClusterStatus(cluster statusapi.Cluster, w io.Writer) {
@@ -411,6 +410,13 @@ func unknownFallback(text string) string {
 		return text
 	}
 	return "<unknown>"
+}
+
+func clusterStatusError(status clusterStatus) error {
+	if status.Status.IsDegraded() {
+		return trace.BadParameter("degraded")
+	}
+	return nil
 }
 
 // printOptions controls status command output
