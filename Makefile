@@ -42,7 +42,7 @@ RELEASE_OUT ?=
 TELEPORT_TAG = 3.2.13
 # TELEPORT_REPOTAG adapts TELEPORT_TAG to the teleport tagging scheme
 TELEPORT_REPOTAG := v$(TELEPORT_TAG)
-PLANET_TAG := 6.1.8-$(K8S_VER_SUFFIX)-6-gd050591
+PLANET_TAG := 6.1.9-$(K8S_VER_SUFFIX)
 PLANET_BRANCH := $(PLANET_TAG)
 K8S_APP_TAG := $(GRAVITY_TAG)
 TELEKUBE_APP_TAG := $(GRAVITY_TAG)
@@ -560,12 +560,14 @@ tele-mac: flags
 goinstall: remove-temp-files compile
 	mkdir -p $(GRAVITY_BUILDDIR)
 	mkdir -p $(TF_PROVIDER_DIR)
-	cp $(GOPATH)/bin/gravity $(GRAVITY_OUT)
-	cp $(GOPATH)/bin/tele $(TELE_OUT)
+	for bin in ${BINARIES} ; do \
+		cp $(GOPATH)/bin/$${bin} $(GRAVITY_BUILDDIR)/$${bin} ; \
+	done
 	for provider in ${TF_PROVIDERS} ; do \
 		echo $${provider} ; \
-		cp $(GOPATH)/bin/$${provider} $(GRAVITY_BUILDDIR)/$${provider} ; \
-		cp $(GOPATH)/bin/$${provider} $(TF_PROVIDER_DIR)/$${provider} ; \
+		if [ -f $(GOPATH)/bin/$${provider} ]; then \
+			cp $(GOPATH)/bin/$${provider} $(TF_PROVIDER_DIR)/$${provider} ; \
+		fi; \
 	done
 	$(GRAVITY) package delete $(GRAVITY_PKG) $(DELETE_OPTS) && \
 		$(GRAVITY) package import $(GRAVITY_OUT) $(GRAVITY_PKG)
