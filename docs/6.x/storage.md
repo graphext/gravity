@@ -1,13 +1,28 @@
 # Persistent Storage
 
-Starting with the release version 7.0 Gravity provides an out-of-the-box
-persistent storage support by integrating with [OpenEBS](https://openebs.io/),
-Kubernetes-native Container Attached Storage framework.
+Many applications deployed on Kubernetes require persistent storage. To provide
+persistent storage capabilities, Gravity has an out-of-the-box integration with
+[OpenEBS](https://openebs.io/), Kubernetes-native Container Attached Storage
+framework.
+
+OpenEBS provides the following benefits:
+
+* Synchronous data replication.
+* Snapshots and clones.
+* Backup and restore.
+* Monitoring via Prometheus.
+
+OpenEBS is a [CNCF](https://www.cncf.io/) native project. See OpenEBS
+[documentation](https://docs.openebs.io/docs/next/overview.html) for more
+information.
+
+!!! note "Supported version":
+    OpenEBS integration is supported starting from Gravity 7.0.
 
 ## Enable OpenEBS
 
-OpenEBS integration can be enabled by setting the following field in a cluster
-image manifest file:
+By default OpenEBS integration is disabled. It can be enabled by setting the
+following field in a cluster image manifest file:
 
 ```yaml
 storage:
@@ -25,6 +40,19 @@ in the `openebs` namespace.
     privileged containers will be implicitly allowed when integration with
     OpenEBS is enabled. See [their FAQ](https://docs.openebs.io/docs/next/faq.html#why-ndm-priviledged)
     for details.
+
+### Enable OpenEBS During Upgrade
+
+OpenEBS can be enabled for existing Gravity clusters when they are upgraded
+to a new version that has OpenEBS integration turned on.
+
+To enable it in the existing cluster:
+
+* Update your cluster image manifest to enable OpenEBS integration like shown above.
+* Build a new version of the cluster image using `tele build`. See [Building a Cluster Image](/pack/#building-a-cluster-image) for details.
+* Upgrade the existing cluster to this new version. See [Upgrading a Cluster](/cluster/#updating-a-cluster) for details.
+
+OpenEBS will be installed and configured during the upgrade operation.
 
 ## Configure OpenEBS
 

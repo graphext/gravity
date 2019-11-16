@@ -454,8 +454,9 @@ license:
   enabled: true
 
 # This section allows to tweak persistent storage in a Cluster
+# By default OpenEBS integration is disabled
 storage:
-  # This section contains parameters specific to OpenEBS
+  # Parameters specific to OpenEBS
   openebs:
     # Set this to true to install OpenEBS in a Cluster
     # Note that setting this to true will also implicitly enable privileged containers
